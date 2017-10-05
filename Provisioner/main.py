@@ -3,8 +3,8 @@ import json
 
 
 class server(object):
-    def __init__(self,type = 'none', authDict = {}):
-        self.__authDict = authDict
+    def __init__(self):
+        pass
 
     def provision(self):
         return True
@@ -51,7 +51,7 @@ class response(object):
         return outStr
 
 
-class RESTClient(object):
+class HTTPClient(object):
     def __init__(self,headersDict,hostname,port=443):
         self.__APIConnection = httplib.HTTPSConnection(hostname,port)
         self.__headers = headersDict
@@ -75,14 +75,14 @@ class RESTClient(object):
 
 
 
-if __name__ == "__main__":
-    mabody = '''{
-  "name": "manamajeff",
-  "region": 0,
-  "size": "512mb",
-  "image": 16623283
-}'''
-
-    print mabody
-    myRest = RESTClient({'Authorization':'Bearer a7e26ca2837730e171e367dca448252a2e40015aab140079a866ba95996db4c6', 'Content-Type':'application/json'},'api.digitalocean.com')
-    print myRest.post('/v2/droplets',mabody)
+# if __name__ == "__main__":
+#     mabody = '''{
+#   "name": "manamajeff",
+#   "region": 0,
+#   "size": "512mb",
+#   "image": 16623283
+# }'''
+#
+#     print mabody
+#     myRest = HTTPClient({'Authorization': 'Bearer a7e26ca2837730e171e367dca448252a2e40015aab140079a866ba95996db4c6', 'Content-Type': 'application/json'}, 'api.digitalocean.com')
+#     print myRest.post('/v2/droplets',mabody)
