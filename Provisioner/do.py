@@ -6,7 +6,7 @@ class doDroplet(server):
     def __init__(self, accessToken=None, id=None, status=None, name=None, created_at=None, size={}, networks={}, image={}, region={}, rawDropletList=[]):
         self.__accessToken = accessToken
         self.__headers = {'Authorization': 'Bearer ' + self.__accessToken, 'Content-Type': 'application/json'}
-        self.__RESTClient = HTTPClient(self.__headers, 'api.digitalocean.com')
+        self.__HTTPSClient = HTTPSClient(self.__headers, 'api.digitalocean.com')
         if rawDropletList != []:
             self.fillPropertiesFromDict(rawDropletList)
         self.id = id
@@ -68,7 +68,7 @@ class doDroplet(server):
         print body
 
         try:
-            DOresponse = self.__RESTClient.post('/v2/droplets',body)
+            DOresponse = self.__HTTPSClient.post('/v2/droplets', body)
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
@@ -88,7 +88,7 @@ class doDroplet(server):
 
     def update(self):
         try:
-            DOresponse = self.__RESTClient.get('/v2/droplets/{}'.format(self.id)) #todo: handle no ip
+            DOresponse = self.__HTTPSClient.get('/v2/droplets/{}'.format(self.id)) #todo: handle no ip
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
@@ -103,7 +103,7 @@ class doDroplet(server):
             return False,DOresponse
 
     def destroy(self):
-        return self.__RESTClient.delete('/v2/droplets/{}'.format(self.id))
+        return self.__HTTPSClient.delete('/v2/droplets/{}'.format(self.id))
 
     def __str__(self):
         return '\n'.join("%s=%s" % property for property in vars(self).items())

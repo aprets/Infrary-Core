@@ -51,7 +51,7 @@ class response(object):
         return outStr
 
 
-class HTTPClient(object):
+class HTTPSClient(object):
     def __init__(self,headersDict,hostname,port=443):
         self.__APIConnection = httplib.HTTPSConnection(hostname,port)
         self.__headers = headersDict
