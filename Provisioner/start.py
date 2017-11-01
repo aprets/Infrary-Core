@@ -7,6 +7,10 @@ import json
 
 #debug
 serverProvider = 'DO'
+OCTOCORE_DOMAIN = '127.0.0.1' # TODO move to Dockerfile/Pass info in differently
+OCTOCORE_PORT = 5000
+OCTOCORE_SERVER_SUBMIT_PATH= '/v0/servers'
+OCTOCORE_TOKEN = 'aTotallySecretToken'
 
 if serverProvider == "DO":
     # accessToken = os.environ['ACCESS_TOKEN']
@@ -36,14 +40,27 @@ print "Starting the provisioning process..."
 status,message = server.provision()
 if status is True:
     print "Server ID {} provisioned successfully!".format(str(server.id))
-    #todo: Http post to "main app"
-    #print json.dumps(server, default=lambda o: o.__dict__)
-    #debug
-    print "\n\n\n\nDebug stuff:\n"
-    print "Server:"
-    print server
-    print "Destroying the server..."
-    print "Response:\n",server.destroy()
+    try:
+        serverPropertyDict = {}
+        for k,v in vars(server).items():
+           if k[0] != '_':
+               serverPropertyDict[k] = v
+        serverPropertyDict['__Infrary__Provider'] = serverProvider
+        headers = {'Authorization': 'Bearer ' + OCTOCORE_TOKEN, 'Content-Type': 'application/json'}
+        HTTPClient = HTTPClient(headers, OCTOCORE_DOMAIN, OCTOCORE_PORT, False)
+        HTTPClient.put(OCTOCORE_SERVER_SUBMIT_PATH, json.dumps(serverPropertyDict))
+        print "Great success!"
+    except:
+        print ("Unable to submit data to OctoCore") # TODO use production name
+    finally:
+        # print json.dumps(server, default=lambda o: o.__dict__)
+        # debug
+        print "\n\n\n\nDebug stuff:\n"
+        print "Server:"
+        print server
+        print "Destroying the server..."
+        print "Response:\n", server.destroy()
+
 
 else:
     print "There was a critical error provisioning the server!"

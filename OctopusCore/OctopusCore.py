@@ -1,3 +1,5 @@
+# TODO put in a docker container.
+
 from flask import Flask, jsonify, url_for, redirect, request , g, abort
 from flask_pymongo import PyMongo
 from flask_restful import Api, Resource

@@ -51,9 +51,12 @@ class response(object):
         return outStr
 
 
-class HTTPSClient(object):
-    def __init__(self,headersDict,hostname,port=443):
-        self.__APIConnection = httplib.HTTPSConnection(hostname,port)
+class HTTPClient(object):
+    def __init__(self,headersDict,hostname,port=443,useHTTPS=True):
+        if useHTTPS:
+            self.__APIConnection = httplib.HTTPSConnection(hostname,port)
+        else:
+            self.__APIConnection = httplib.HTTPConnection(hostname, port)
         self.__headers = headersDict
 
     def setHeaders(self,headersDict):
@@ -69,6 +72,9 @@ class HTTPSClient(object):
 
     def post(self,path,body):
         return self.makeRequest('POST', path, body)
+
+    def put(self,path,body):
+        return self.makeRequest('PUT', path, body)
 
     def delete(self,path):
         return self.makeRequest('DELETE', path)

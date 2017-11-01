@@ -6,7 +6,7 @@ class vtInstance(server):
     def __init__(self, apiKey=None, SUBID=None, status=None, label=None, date_created=None, DCID=None, VPSPLANID=None, OSID={}, rawInstanceList=[]):
         self.__apiKey = apiKey
         self.__headers = {'API-Key': self.__apiKey, 'Content-Type': 'application/x-www-form-urlencoded'} #, 'Content-Type': 'application/x-www-form-urlencoded'
-        self.__HTTPSClient = HTTPSClient(self.__headers, 'api.vultr.com')
+        self.__HTTPSClient = HTTPClient(self.__headers, 'api.vultr.com')
         if rawInstanceList != []:
             self.fillPropertiesFromDict(rawInstanceList)
         self.SUBID = SUBID

@@ -6,7 +6,7 @@ class doDroplet(server):
     def __init__(self, accessToken=None, id=None, status=None, name=None, created_at=None, size={}, networks={}, image={}, region={}, rawDropletList=[]):
         self.__accessToken = accessToken
         self.__headers = {'Authorization': 'Bearer ' + self.__accessToken, 'Content-Type': 'application/json'}
-        self.__HTTPSClient = HTTPSClient(self.__headers, 'api.digitalocean.com')
+        self.__HTTPSClient = HTTPClient(self.__headers, 'api.digitalocean.com')
         if rawDropletList != []:
             self.fillPropertiesFromDict(rawDropletList)
         self.id = id
