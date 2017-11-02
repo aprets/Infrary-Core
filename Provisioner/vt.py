@@ -23,46 +23,6 @@ class vtInstance(server):
 
     def provision(self):
 
-        # All of this is currently pointless as defaults are defined in Dockerfile
-        #
-        # # Set default name
-        #
-        # if self.name == "" or self.name is None:
-        #     self.name = 'Example'
-        #
-        # # Set default region
-        #
-        # if 'slug' not in self.region:
-        #     self.region = {'slug':''}
-        #
-        # if self.region['slug'] == '':
-        #     self.region['slug'] = 'lon1'
-        #
-        # # Set default image
-        #
-        # if 'slug' not in self.image:
-        #     self.image = {'slug': ''}
-        #
-        # if self.image['slug'] == '':
-        #     self.image['slug'] = 'ubuntu-14-04-x64'
-        #
-        # # Set default size
-        #
-        # if 'slug' not in self.size:
-        #     self.size = {'slug': ''}
-        #
-        # if self.size['slug'] == '':
-        #     self.size['slug'] = '512mb'
-
-        # Define request body
-
-        # body = '''{
-        #       "DCID": "%s",
-        #       "OSID": "%s",
-        #       "VPSPLANID": "%s",
-        #       "label": "%s"
-        #     }''' % (self.DCID, self.OSID, self.VPSPLANID, self.label) #todo: sanitize, different ways to set region/size/image
-
         body = "DCID={}&OSID={}&VPSPLANID={}&label={}".format(self.DCID, self.OSID, self.VPSPLANID, self.label)
 
         print 'About to create the following instance:'

@@ -54,7 +54,7 @@ class serverList(Resource):
         else:
             return "No servers found", 404
 
-    def put(self): # todo: check everything!
+    def put(self): # todo: check everything? (m/b check for __Infrary__Provider and id)
         mongo.db.users.update(
             {'_id': ObjectId(g.userId)},
             {'$push': {'servers': request.get_json()}}
