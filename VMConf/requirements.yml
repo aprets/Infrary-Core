@@ -1,0 +1,6 @@
+# from galaxy
+- src: dev-sec.os-hardening
+
+- src: dev-sec.ssh-hardening
+
+- src: angstwad.docker_ubuntu
