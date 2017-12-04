@@ -1,17 +1,11 @@
 FROM alpine:3.6
 
-ENV REQUIREMENTS "YES"
-ENV KEY """"""
-
-
-RUN apk --update add python py-pip openssl ca-certificates bash git && \
+RUN apk --update add python py-pip openssl ca-certificates bash git openssh-client && \
     apk --update add --virtual build-dependencies python-dev libffi-dev openssl-dev build-base && \
-    pip install --upgrade pip cffi && pip install ansible                && \
-    apk del build-dependencies && rm -rf /var/cache/apk/*               && \
-    mkdir -p /etc/ansible
+    pip install --upgrade pip cffi && pip install paramiko                && \
+    apk del build-dependencies && rm -rf /var/cache/apk/*
 
-ADD requirements.yml /requirements.yml
-
-ADD infraryAnsibleLauncher.sh /usr/local/bin/infraryAnsibleLauncher
-RUN chmod +x /usr/local/bin/infraryAnsibleLauncher
-CMD ["/bin/bash","/usr/local/bin/infraryAnsibleLauncher"]
+ADD start.py /start.py
+ADD main.py /main.py
+RUN chmod +x /start.py
+ENTRYPOINT ["python","/start.py"]

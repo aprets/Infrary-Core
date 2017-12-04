@@ -5,7 +5,7 @@ import hashlib
 
 class doDroplet(server):
 
-    def __init__(self, accessToken=None, id=None, status=None, name=None, created_at=None, size={}, networks={}, image={}, region={}, rawDropletList=[], sshKey = None): #TODO force ssh key to be passed
+    def __init__(self, accessToken=None, id=None, status=None, name=None, created_at=None, size={}, networks={}, image={}, region={}, rawDropletList=[], sshKeys = None): #TODO force ssh key to be passed
         self.__accessToken = accessToken
         self.__headers = {'Authorization': 'Bearer ' + self.__accessToken, 'Content-Type': 'application/json'}
         self.__HTTPSClient = HTTPClient(self.__headers, 'api.digitalocean.com')
@@ -19,19 +19,22 @@ class doDroplet(server):
         self.networks = networks
         self.image = image
         self.region = region
-        self.__SSHKey = sshKey
-        self.SSHFingerprint = self.RSAPublicKeyStrToFingerprint(self.__SSHKey)
+        self.__SSHKeys = sshKeys
+        if not sshKeys == None:
+            self.SSHFingerprints = []
+            for key in self.__SSHKeys:
+                self.SSHFingerprints.append(self.RSAPublicKeyStrToFingerprint(key))
 
     def fillPropertiesFromDict(self,dict):
         for key, value in dict.items():
             setattr(self, key, value)
 
     def RSAPublicKeyStrToFingerprint(self, publicKeyStr):
-        key = base64.b64decode(publicKeyStr.strip().split()[1].encode('ascii'))
+        key = base64.b64decode(publicKeyStr.strip().split()[1].encode('ascii')) #todo COMMENTITALL
         fingerPrint = hashlib.md5(key).hexdigest()
-        return ':'.join(a + b for a, b in zip(fingerPrint[::2], fingerPrint[1::2]))
+        return ':'.join(left + right for left, right in zip(fingerPrint[::2], fingerPrint[1::2]))
 
-    def AddKeyIfNonExistant(self):
+    def AddKeyIfNonExistant(self,key,fingerprint):
         print ('Assigning a Public Key')
         try:
             DOresponse = self.__HTTPSClient.get('/v2/account/keys')
@@ -41,12 +44,12 @@ class doDroplet(server):
             return False, e.message
         DOresponse.jsonDecode()
         accountSSHKeys = DOresponse.body["ssh_keys"]
-        if not any(key['fingerprint'] == self.SSHFingerprint for key in accountSSHKeys):
+        if not any(key['fingerprint'] == fingerprint for key in accountSSHKeys):
             print ('The key is not registered with DO, creating it...')
             body = '''{
                           "name": "%s",
                           "public_key": "%s"
-                        }''' % ('A key for {}'.format(self.name),self.__SSHKey)  # todo: sanitize, different ways to set region/size/image
+                        }''' % ('A key for {}'.format(self.name),key)  # todo: sanitize, different ways to set region/size/image
 
             print 'About to create the following key:'
             print body
@@ -74,22 +77,21 @@ class doDroplet(server):
 
 
     def provision(self):
+        for keyInd in range(len(self.__SSHKeys)):
+            status,message = self.AddKeyIfNonExistant(self.__SSHKeys[keyInd],self.SSHFingerprints[keyInd])
+            if not status:
+                print ("SSH Key error:")
+                print message
+                exit(1)
 
         # Define request body
-        status,message = self.AddKeyIfNonExistant()
-        if not status:
-            print ("SSH Key error:")
-            print message
-            exit(1)
-
-
         body = '''{
               "name": "%s",
               "region": "%s",
               "size": "%s",
               "image": "%s",
-              "ssh_keys": ["%s"]
-            }''' % (self.name, self.region['slug'], self.size['slug'], self.image['slug'], self.SSHFingerprint) #todo: sanitize, different ways to set region/size/image
+              "ssh_keys": %s
+            }''' % (self.name, self.region['slug'], self.size['slug'], self.image['slug'], str(self.SSHFingerprints).replace('\'','"')) #todo: sanitize, different ways to set region/size/image
 
         print 'About to create the following droplet:'
         print body

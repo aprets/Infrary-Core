@@ -1,20 +1,16 @@
 FROM python:2-alpine
 
+
+RUN apk --update add python py-pip openssl ca-certificates bash git openssh-client && \
+    apk --update add --virtual build-dependencies python-dev libffi-dev openssl-dev build-base && \
+    pip install --upgrade pip cryptography && \
+    apk del build-dependencies && rm -rf /var/cache/apk/*
+
 WORKDIR /usr/src/app
 
-COPY . .
+COPY main.py .
+COPY do.py .
+COPY vt.py .
+COPY start.py .
 
-#ENV SERVER_PROVIDER VT
-#ENV API_KEY VWU7R575JW3XWCKAJJJSZNTNM4LXFJ
-#ENV DCID 1
-#ENV VPSPLANID 1
-#ENV OSID 1
-ENV SERVER_PROVIDER DO
-ENV ACCESS_TOKEN a7e26ca2837730e171e367dca448252a2e40015aab140079a866ba95996db4c6
-ENV SERVER_NAME "Infrary"
-ENV SERVER_SIZE "512mb"
-ENV SERVER_IMAGE "ubuntu-14-04-x64"
-ENV SERVER_LOCATION "lon1"
-ENV SSH_KEY "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA3KVkFiPI+5RlTiTKsRkjEZr6ssjYFw9Tk0dzoLKYQH8NOWA13tpSo8r6wT7P+yxXG631wGSBfHyarCpuNO8X2sS7y1zWFVIiDvp1cT4sKGF3kfMPjmt5vrfrp+qEzxHDG9oQqCvnYv1NnhIsb+ZgLG+S56z7ssEx+CPpbUU2RE+27/RYxRNjSZQ7l3eNiQyyvBlPBnK+RK6uccUJhG8KfqWB1hOtlJ7H71Mx0RwiLA6as7OK5PuwqkCN5JhzJs48mRjtRE86R0VwKwny/LuPmTMyyz7JCg38C4PDgEXIJrAfuo/TJDcqiJnxPeX4+neDnmXEeVvUqMUnbVNlk8qZ+w=="
-
-CMD [ "python", "./start.py" ]
+ENTRYPOINT [ "python", "./start.py" ]
