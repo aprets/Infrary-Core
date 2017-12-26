@@ -36,42 +36,33 @@ class doDroplet(server):
 
     def AddKeyIfNonExistant(self,key,fingerprint):
         print ('Assigning a Public Key')
+        print key, fingerprint
+
+        body = '''{
+                      "name": "%s",
+                      "public_key": "%s"
+                    }''' % ('A key for {}'.format(self.name),key)  # todo: sanitize, different ways to set region/size/image
+
+        print 'About to create the following key:'
+        print body
+
         try:
-            DOresponse = self.__HTTPSClient.get('/v2/account/keys')
+            DOresponse = self.__HTTPSClient.post('/v2/account/keys', body)
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
             return False, e.message
         DOresponse.jsonDecode()
-        accountSSHKeys = DOresponse.body["ssh_keys"]
-        if not any(key['fingerprint'] == fingerprint for key in accountSSHKeys):
-            print ('The key is not registered with DO, creating it...')
-            body = '''{
-                          "name": "%s",
-                          "public_key": "%s"
-                        }''' % ('A key for {}'.format(self.name),key)  # todo: sanitize, different ways to set region/size/image
-
-            print 'About to create the following key:'
-            print body
-
-            try:
-                DOresponse = self.__HTTPSClient.post('/v2/account/keys', body)
-            except Exception as e:
-                print "Could not connect to DO API"
-                print e.message
-                return False, e.message
-            DOresponse.jsonDecode()
-            print DOresponse.status
-            if DOresponse.status == 201:
-                print ('Key successfully created!')
-                return True, ''
-            else:
-                print "Failed to create a key! Response from DO API:"
-                print DOresponse
-                return False, DOresponse
-        else:
-            print ('The key already exists!')
+        if DOresponse.status == 201:
+            print ('Key successfully created!')
             return True, ''
+        elif DOresponse.status == 422 and DOresponse.body.get("message") == u'SSH Key is already in use on your account':
+            print ('Key already exists!')
+            return True, ''
+        else:
+            print "Failed to create a key! Response from DO API:"
+            print DOresponse
+            return False, DOresponse
 
 
 
