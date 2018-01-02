@@ -2,14 +2,24 @@ import httplib
 import json
 
 
+class Server(object):
+    def __init__(self):
+        pass
 
-class response(object):
-    def __init__(self,headers,body,status,reason,httpVer):
+    def provision(self):
+        return True
+
+    def destroy(self):
+        return True
+
+
+class Response(object):
+    def __init__(self, headers, body, status, reason, http_ver):
         self.__headers = headers
-        self.__body = body #type: str
+        self.__body = body  # type: str
         self.__status = status
-        self.__reason = reason #type: str
-        self.__httpVer = httpVer
+        self.__reason = reason  # type: str
+        self.__httpVer = http_ver
 
     @property
     def headers(self):
@@ -28,58 +38,50 @@ class response(object):
         return self.__reason.strip()
 
     @property
-    def httpVer(self):
+    def http_ver(self):
         return float(self.__httpVer)
 
-    def jsonDecode(self):
+    def json_decode(self):
         self.__body = json.loads(self.__body)
 
     def __str__(self):
-        outStr = 'HTTP v{httpVer} {status}({reason}):\n' \
+        out_str = 'HTTP v{httpVer} {status}({reason}):\n' \
                  '{body}\n' \
-                 'Headers : {headers}' \
-                  .format(httpVer=str(self.__httpVer),status=str(self.__status),reason=str(self.__reason),body=str(self.body),headers = str(self.headers))
-        return outStr
+                 'Headers : {headers}'.format(httpVer=str(self.__httpVer),
+                                              status=str(self.__status),
+                                              reason=str(self.__reason),
+                                              body=str(self.body),
+                                              headers=str(self.headers))
+        return out_str
 
 
 class HTTPClient(object):
-    def __init__(self,headersDict,hostname,port=443,useHTTPS=True):
-        if useHTTPS:
-            self.__APIConnection = httplib.HTTPSConnection(hostname,port)
+    def __init__(self, headers_dict, hostname, port=443, use_https=True):
+        if use_https:
+            self.__APIConnection = httplib.HTTPSConnection(hostname, port)
         else:
             self.__APIConnection = httplib.HTTPConnection(hostname, port)
-        self.__headers = headersDict
+        self.__headers = headers_dict
 
-    def setHeaders(self,headersDict):
-        self.__headers = headersDict
+    def set_headers(self, headers_dict):
+        self.__headers = headers_dict
 
-    def makeRequest(self,type,path,body=''):
-        self.__APIConnection.request(type, path, body, headers=self.__headers)  # todo: handle errors
-        APIresponse = self.__APIConnection.getresponse()
-        return response(APIresponse.getheaders(),APIresponse.read(),APIresponse.status,APIresponse.reason,APIresponse.version)
+    def make_request(self, request_type, path, body=''):
+        self.__APIConnection.request(request_type, path, body, headers=self.__headers)  # todo: handle errors
+        api_response = self.__APIConnection.getresponse()
+        return Response(api_response.getheaders(), api_response.read(), api_response.status, api_response.reason,
+                        api_response.version)
 
-    def get(self,path):
-        return self.makeRequest('GET',path)
+    def get(self, path):
+        return self.make_request('GET', path)
 
-    def post(self,path,body):
-        return self.makeRequest('POST', path, body)
+    def post(self, path, body):
+        return self.make_request('POST', path, body)
 
-    def put(self,path,body):
-        return self.makeRequest('PUT', path, body)
+    def put(self, path, body):
+        return self.make_request('PUT', path, body)
 
-    def delete(self,path):
-        return self.makeRequest('DELETE', path)
+    def delete(self, path):
+        return self.make_request('DELETE', path)
 
 
-
-# if __name__ == "__main__":
-#     mabody = '''{
-#   "name": "manamajeff",
-#   "region": 0,
-#   "size": "512mb",
-#   "image": 16623283
-# }'''
-#
-#     print mabody
-#     myRest = HTTPClient({'Authorization': 'Bearer a7e26ca2837730e171e367dca448252a2e40015aab140079a866ba95996db4c6', 'Content-Type': 'application/json'}, 'api.digitalocean.com')
-#     print myRest.post('/v2/droplets',mabody)

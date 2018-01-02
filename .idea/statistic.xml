@@ -10,6 +10,7 @@
         <option value="$PROJECT_DIR$/.idea" />
         <option value="$PROJECT_DIR$/OctopusCore/.idea" />
         <option value="$PROJECT_DIR$/Provisioner/.idea" />
+        <option value="$PROJECT_DIR$/WebUI" />
       </list>
     </option>
   </component>

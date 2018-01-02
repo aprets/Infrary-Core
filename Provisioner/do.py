@@ -1,17 +1,27 @@
 from main import *
-import time
 import base64
 import hashlib
 
-class doDroplet(server):
 
-    def __init__(self, accessToken=None, id=None, status=None, name=None, created_at=None, size={}, networks={}, image={}, region={}, rawDropletList=[], sshKeys = None): #TODO force ssh key to be passed
-        self.__accessToken = accessToken
+class DoDroplet(Server):
+    def __init__(self, access_token=None, server_id=None, status=None, name=None, created_at=None, size=None,
+                 networks=None,
+                 image=None, region=None, raw_droplet_dict=None, ssh_keys=None):  # TODO force ssh key to be passed
+        super(DoDroplet, self).__init__()
+        if size is None:
+            size = {}
+        if networks is None:
+            networks = {}
+        if image is None:
+            image = {}
+        if region is None:
+            region = {}
+        self.__accessToken = access_token
         self.__headers = {'Authorization': 'Bearer ' + self.__accessToken, 'Content-Type': 'application/json'}
         self.__HTTPSClient = HTTPClient(self.__headers, 'api.digitalocean.com')
-        if rawDropletList != []:
-            self.fillPropertiesFromDict(rawDropletList)
-        self.id = id
+        if raw_droplet_dict:
+            self.fill_properties_from_dict(raw_droplet_dict)
+        self.id = server_id
         self.status = status
         self.name = name
         self.created_at = created_at
@@ -19,57 +29,57 @@ class doDroplet(server):
         self.networks = networks
         self.image = image
         self.region = region
-        self.__SSHKeys = sshKeys
-        if not sshKeys == None:
+        self.__SSHKeys = ssh_keys
+        if ssh_keys is not None:
             self.SSHFingerprints = []
             for key in self.__SSHKeys:
-                self.SSHFingerprints.append(self.RSAPublicKeyStrToFingerprint(key))
+                self.SSHFingerprints.append(self.rsa_public_key_str_to_fingerprint(key))
 
-    def fillPropertiesFromDict(self,dict):
-        for key, value in dict.items():
+    def fill_properties_from_dict(self, inp_dict):
+        for key, value in inp_dict.items():
             setattr(self, key, value)
 
-    def RSAPublicKeyStrToFingerprint(self, publicKeyStr):
-        key = base64.b64decode(publicKeyStr.strip().split()[1].encode('ascii')) #todo COMMENTITALL
-        fingerPrint = hashlib.md5(key).hexdigest()
-        return ':'.join(left + right for left, right in zip(fingerPrint[::2], fingerPrint[1::2]))
+    @staticmethod
+    def rsa_public_key_str_to_fingerprint(public_key_str):
+        key = base64.b64decode(public_key_str.strip().split()[1].encode('ascii'))  # todo COMMENTITALL
+        finger_print = hashlib.md5(key).hexdigest()
+        return ':'.join(left + right for left, right in zip(finger_print[::2], finger_print[1::2]))
 
-    def AddKeyIfNonExistant(self,key,fingerprint):
+    def add_key_if_non_existent(self, key, fingerprint):
         print ('Assigning a Public Key')
         print key, fingerprint
 
         body = '''{
                       "name": "%s",
                       "public_key": "%s"
-                    }''' % ('A key for {}'.format(self.name),key)  # todo: sanitize, different ways to set region/size/image
+                    }''' % (
+            'A key for {}'.format(self.name), key)  # todo: sanitize, different ways to set region/size/image
 
         print 'About to create the following key:'
         print body
 
         try:
-            DOresponse = self.__HTTPSClient.post('/v2/account/keys', body)
+            do_response = self.__HTTPSClient.post('/v2/account/keys', body)
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
             return False, e.message
-        DOresponse.jsonDecode()
-        if DOresponse.status == 201:
+        do_response.json_decode()
+        if do_response.status == 201:
             print ('Key successfully created!')
             return True, ''
-        elif DOresponse.status == 422 and DOresponse.body.get("message") == u'SSH Key is already in use on your account':
+        elif do_response.status == 422 and do_response.body.get(
+                "message") == u'SSH Key is already in use on your account':
             print ('Key already exists!')
             return True, ''
         else:
             print "Failed to create a key! Response from DO API:"
-            print DOresponse
-            return False, DOresponse
-
-
-
+            print do_response
+            return False, do_response
 
     def provision(self):
         for keyInd in range(len(self.__SSHKeys)):
-            status,message = self.AddKeyIfNonExistant(self.__SSHKeys[keyInd],self.SSHFingerprints[keyInd])
+            status, message = self.add_key_if_non_existent(self.__SSHKeys[keyInd], self.SSHFingerprints[keyInd])
             if not status:
                 print ("SSH Key error:")
                 print message
@@ -82,58 +92,53 @@ class doDroplet(server):
               "size": "%s",
               "image": "%s",
               "ssh_keys": %s
-            }''' % (self.name, self.region['slug'], self.size['slug'], self.image['slug'], str(self.SSHFingerprints).replace('\'','"')) #todo: sanitize, different ways to set region/size/image
+            }''' % (self.name, self.region['slug'], self.size['slug'], self.image['slug'],
+                    str(self.SSHFingerprints).replace('\'',
+                                                      '"'))  # todo: sanitize, different ways to set region/size/image
 
         print 'About to create the following droplet:'
         print body
 
         try:
-            DOresponse = self.__HTTPSClient.post('/v2/droplets', body)
+            do_response = self.__HTTPSClient.post('/v2/droplets', body)
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
             return False, e.message
-        DOresponse.jsonDecode()
-        if DOresponse.status == 202:
-            self.fillPropertiesFromDict(DOresponse.body['droplet'])
+        do_response.json_decode()
+        if do_response.status == 202:
+            self.fill_properties_from_dict(do_response.body['droplet'])
             print 'Waiting for the droplet to become active'
             while self.status != 'active':
                 print '...'
                 self.update()
-            return True,''
+            return True, ''
         else:
             print "Failed to provision a droplet! Response from DO API:"
-            print DOresponse
-            return False,DOresponse
+            print do_response
+            return False, do_response
 
     def update(self):
         try:
-            DOresponse = self.__HTTPSClient.get('/v2/droplets/{}'.format(self.id)) #todo: handle no ip
+            do_response = self.__HTTPSClient.get('/v2/droplets/{}'.format(self.id))  # todo: handle no ip
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
-            return False,e.message
-        if DOresponse.status == 200:
-            DOresponse.jsonDecode()
-            self.fillPropertiesFromDict(DOresponse.body['droplet'])
-            return True,''
+            return False, e.message
+        if do_response.status == 200:
+            do_response.json_decode()
+            self.fill_properties_from_dict(do_response.body['droplet'])
+            return True, ''
         else:
             print "Failed to update droplet information! Response from DO API:"
-            print DOresponse
-            return False,DOresponse
+            print do_response
+            return False, do_response
 
     def destroy(self):
         return self.__HTTPSClient.delete('/v2/droplets/{}'.format(self.id))
 
     def __str__(self):
-        return '\n'.join("%s=%s" % property for property in vars(self).items())
-
-
-
-
-
-
-
+        return '\n'.join("%s=%s" % obj_property for obj_property in vars(self).items())
 
 #
 # if __name__ == "__main__":

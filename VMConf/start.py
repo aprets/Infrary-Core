@@ -9,130 +9,153 @@ import random
 import json
 import StringIO
 
-#todo debug
+# todo debug
 OCTOCORE_DOMAIN = os.environ['OCTOCORE_DOMAIN']
 OCTOCORE_PORT = os.environ['OCTOCORE_PORT']
-OCTOCORE_CONFIGURED_SERVER_SUBMIT_PATH= os.environ['OCTOCORE_CONFIGURED_SERVER_SUBMIT_PATH']
+OCTOCORE_CONFIGURED_SERVER_SUBMIT_PATH = os.environ['OCTOCORE_CONFIGURED_SERVER_SUBMIT_PATH']
 
-#todo undebug
+# todo undebug
 for arg in sys.argv:
     print arg
 
-def rancherInit():
 
+def rancher_init():
     # Create API Key for future use
 
-    rancherKeySecret = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(50))
-    headers = {'Content-Type': 'application/json'}
-    anHTTPClient = HTTPClient(headers, octoConf['serverHostname'], 8080, False)
-    body = json.dumps({"description":"Do Not Delete Infrary API KEY","name":"Infrary API KEY","publicValue":"InfraryAPIKey","secretValue":rancherKeySecret})
-    rancherResponse = anHTTPClient.post('/v2-beta/apiKeys', body)
-    if rancherResponse.status != 201:
-        return False,rancherResponse.body
+    rancher_key_secret = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(50))
+    json_headers = {'Content-Type': 'application/json'}
+    an_http_client = HTTPClient(json_headers, octo_conf['serverHostname'], 8080, False)
+    body = json.dumps(
+        {"description": "Do Not Delete Infrary API KEY", "name": "Infrary API KEY", "publicValue": "InfraryAPIKey",
+         "secretValue": rancher_key_secret})
+    rancher_response = an_http_client.post('/v2-beta/apiKeys', body)
+    if rancher_response.status != 201:
+        return False, rancher_response.body
     import base64
-    authStr = base64.b64encode('InfraryAPIKey:{}'.format(rancherKeySecret))
-    headers['Authorization'] = 'Basic {}'.format(authStr)
+    auth_str = base64.b64encode('InfraryAPIKey:{}'.format(rancher_key_secret))
+    json_headers['Authorization'] = 'Basic {}'.format(auth_str)
     # Init a new Client with API key in headers
-    anHTTPClient = HTTPClient(headers, octoConf['serverHostname'], 8080, False)
+    an_http_client = HTTPClient(json_headers, octo_conf['serverHostname'], 8080, False)
 
     # Enable auth
 
-    rancherUser = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(8))
-    rancherPass = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(50))
-    body = json.dumps({"enabled":True,"name":"Infrary User","password":rancherPass,"username":rancherUser})
-    rancherResponse = anHTTPClient.post('/v2-beta/localauthconfig', body)
-    if rancherResponse.status != 201:
-        return False, rancherResponse.body
+    rancher_user = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(8))
+    rancher_pass = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(50))
+    body = json.dumps({"enabled": True, "name": "Infrary User", "password": rancher_pass, "username": rancher_user})
+    rancher_response = an_http_client.post('/v2-beta/localauthconfig', body)
+    if rancher_response.status != 201:
+        return False, rancher_response.body
     else:
-        rancherConfDict = {'host': '{}:8080'.format(octoConf['serverHostname']), 'user' : rancherUser, 'pass' : rancherPass, 'keySecret' : rancherKeySecret}
-        return True, rancherConfDict
+        rancher_conf_dict = \
+            {
+                'host': '{}:8080'.format(octo_conf['serverHostname']),
+                'user': rancher_user,
+                'pass': rancher_pass,
+                'keySecret': rancher_key_secret
+            }
+        return True, rancher_conf_dict
 
-def rancherInstall():
 
-    counter = 1
-    isRancherAlive = False
-    while not isRancherAlive:
-        if counter == 15:
-            return False,'Rancher not responding'
-        print 'Attempting to connect to Rancher (Attempt {})'.format(str(counter))
-        counter += 1
+def rancher_install():
+    try_counter = 1
+    is_rancher_alive = False
+    while not is_rancher_alive:
+        if try_counter == 15:
+            return False, 'Rancher not responding'
+        print 'Attempting to connect to Rancher (Attempt {})'.format(str(try_counter))
+        try_counter += 1
         try:
-            headers = {'Content-Type': 'application/json'}
-            anHTTPClient = HTTPClient(headers, octoConf['serverHostname'], 8080, False)
-            rancherResponse = anHTTPClient.get('/')
-            if rancherResponse.status == 200:
-                isRancherAlive = True
+            rancher_headers = {'Content-Type': 'application/json'}
+            an_http_client = HTTPClient(rancher_headers, octo_conf['serverHostname'], 8080, False)
+            rancher_response = an_http_client.get('/')
+            if rancher_response.status == 200:
+                is_rancher_alive = True
                 print "Rancher is up!"
-        except Exception as e:
-            print e, e.message, e.args
+        except Exception as an_error:
+            print an_error, an_error.message, an_error.args
             time.sleep(10)
 
-    return rancherInit()
+    return rancher_init()
 
 
-if len(sys.argv) == 4 and '' not in [sys.argv[1],sys.argv[2],sys.argv[3]]:
+if len(sys.argv) == 4 and '' not in [sys.argv[1], sys.argv[2], sys.argv[3]]:
 
-    keyStr = sys.argv[1].replace('\\n','\n')
+    key_str = sys.argv[1].replace('\\n', '\n')
 
-    print keyStr
+    print key_str
 
-    SSHKey = paramiko.RSAKey.from_private_key(StringIO.StringIO(keyStr))
+    ssh_key = paramiko.RSAKey.from_private_key(StringIO.StringIO(key_str))
 
     try:
-        octoConf = json.loads(sys.argv[2])
+        octo_conf = json.loads(sys.argv[2])
     except Exception as e:
-        #todo undebug
+        # todo undebug
         print "An error has occurred parsing the octoConf"
         print e
         exit(1)
 
     try:
         print sys.argv[3]
-        VMConfiguration = json.loads(sys.argv[3])
-        print VMConfiguration
-        commandList = VMConfiguration["cmdList"]
+        vm_configuration = json.loads(sys.argv[3])
+        print vm_configuration
+        command_list = vm_configuration["cmdList"]
     except Exception as e:
-        #todo undebug
+        # todo undebug
         print "An error has occurred parsing the command list"
         print e
         exit(1)
 
-    print commandList , octoConf , VMConfiguration
-
-    isMaster = False
     try:
-        if VMConfiguration['isMaster'] is True:
-            isMaster = True
-    except:
+        # noinspection PyStatementEffect,PyUnboundLocalVariable
+        command_list
+        # noinspection PyStatementEffect,PyUnboundLocalVariable
+        octo_conf
+        # noinspection PyStatementEffect,PyUnboundLocalVariable
+        vm_configuration
+
+    except NameError:
+        print "well, it WASN'T defined after all!"
+        exit(1)
+
+    print command_list, octo_conf, vm_configuration
+
+    is_master = False
+    try:
+        if vm_configuration['isMaster'] is True:
+            is_master = True
+    except (ValueError, TypeError):
         pass
 
-
     try:
-        if VMConfiguration['selfDestruct'] is True:
-            selfDestruct = True
+        if vm_configuration['selfDestruct'] is True:
+            self_destruct = True
         else:
-            selfDestruct = False
-    except:
-        selfDestruct = False
+            self_destruct = False
+    except (ValueError, TypeError):
+        self_destruct = False
 
     counter = 1
     connected = False
     while not connected:
         print "Attempting to connect... (Attempt {})".format(str(counter))
-        counter += 1
 
-        if counter >= 5:
-            connected = True
+        if counter >= 15:
+            print ("Failed to connect")
+            exit(1)
+
+        counter += 1
 
         try:
 
-            SSHClient = paramiko.SSHClient()
-            SSHClient.set_missing_host_key_policy(paramiko.WarningPolicy)
-            SSHClient.connect(octoConf['serverHostname'],22,'root',pkey=SSHKey)
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.WarningPolicy)
+            ssh_client.connect(octo_conf['serverHostname'], 22, 'root', pkey=ssh_key)
             connected = True
-            for command in commandList:
+            print "connected"
+            for command in command_list:
+                print "EXEC: " + command
 
-                stdin, stdout, stderr = SSHClient.exec_command(command)
+                stdin, stdout, stderr = ssh_client.exec_command(command)
 
                 # Wait for the command to terminate
                 while not stdout.channel.exit_status_ready():
@@ -149,22 +172,23 @@ if len(sys.argv) == 4 and '' not in [sys.argv[1],sys.argv[2],sys.argv[3]]:
                             print stderr.channel.recv(1024),
 
         except Exception as e:
-            print e,e.message,e.args
-            selfDestruct = True
-
+            print e, e.message, e.args
 
         finally:
-            SSHClient.close()
+            ssh_client.close()
+
+        if not connected:
+            time.sleep(5)
 
     try:
 
-        if isMaster:
-            result,data = rancherInstall()
+        if is_master:
+            result, data = rancher_install()
             if result is True:
-                masterConf = data
+                master_conf = data
             else:
-                selfDestruct = True
-                #todo report to octocore
+                self_destruct = True
+                # todo report to octocore
                 print "Error configuring Rancher server"
         else:
             pass
@@ -172,20 +196,27 @@ if len(sys.argv) == 4 and '' not in [sys.argv[1],sys.argv[2],sys.argv[3]]:
 
     except Exception as e:
         print e, e.message, e.args
-        selfDestruct = True
+        self_destruct = True
 
-    submitDict= {}
+    submit_dict = {'__Infrary__SelfDestruct': self_destruct, '__Infrary__IsMaster': is_master}
 
-    submitDict['__Infrary__SelfDestruct'] = selfDestruct
-    submitDict['__Infrary__IsMaster'] = isMaster
-    if isMaster:
-        submitDict['__Infrary__MasterConf'] = masterConf
-    submitDict['__Infrary__Provider'] = octoConf["serverProvider"]
-    submitDict['__Infrary__ID'] = octoConf["serverID"]
-    headers = {'Authorization': 'Bearer ' + octoConf['octoToken'], 'Content-Type': 'application/json'}
-    anHTTPClient = HTTPClient(headers, OCTOCORE_DOMAIN, OCTOCORE_PORT, False)
-    anHTTPClient.post(OCTOCORE_CONFIGURED_SERVER_SUBMIT_PATH, json.dumps(submitDict))
+    try:
+        # noinspection PyStatementEffect,PyUnboundLocalVariable
+        master_conf
 
+    except NameError:
+        print "well, it WASN'T defined after all!"
+        exit(1)
+
+    print command_list, octo_conf, vm_configuration
+
+    if is_master:
+        submit_dict['__Infrary__MasterConf'] = master_conf
+    submit_dict['__Infrary__Provider'] = octo_conf["serverProvider"]
+    submit_dict['__Infrary__ID'] = octo_conf["serverID"]
+    headers = {'Authorization': 'Bearer ' + octo_conf['octoToken'], 'Content-Type': 'application/json'}
+    an_http_client = HTTPClient(headers, OCTOCORE_DOMAIN, OCTOCORE_PORT, False)
+    an_http_client.post(OCTOCORE_CONFIGURED_SERVER_SUBMIT_PATH, json.dumps(submit_dict))
 
 
 else:
