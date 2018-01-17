@@ -67,6 +67,10 @@
         default: 'horizontal'
       },
       lastStepLabel: {default: 'Confirm'},
+      doVerifyLastStep: {
+        type: Boolean,
+        default: false
+      },
       onNext: {},
       onBack: {}
     },
@@ -102,6 +106,8 @@
     },
     created () {
       this.$on('wizardLayoutChange', this.updateLayout)
+      this.$root.$on('wizardGoNext', this.goNext)
+      this.$root.$on('wizardCompleteWizard', this.completeWizard)
     },
     methods: {
       updateLayout (layout) {
@@ -120,8 +126,10 @@
         }
       },
       completeWizard () {
-        this.wizardCompleted = true
-        this.goNext()
+        if (!this.doVerifyLastStep || this.isCurrentStepValid()) {
+          this.wizardCompleted = true
+          this.goNext()
+        }
       },
       isLastStep () {
         return this.currentStep === this.steps.length - 1

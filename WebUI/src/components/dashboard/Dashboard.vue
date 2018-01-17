@@ -33,7 +33,7 @@
 
     <div class="row">
       <div class="col-md-12">
-        <widget headerText="Servers" buttonText="NEW" buttonRoute="/auth/login">
+        <widget headerText="Servers" buttonText="NEW" buttonRoute="/servers/create">
           <div class="table-responsive">
             <table class="table table-striped table-sm color-icon-label-table">
               <thead>
@@ -46,9 +46,12 @@
               </tr>
               </thead>
               <tbody>
-              <tr v-for="server in this.servers" class="table-success">
+              <tr v-for="server in this.servers" v-bind:class="trClassGen(server)">
                 <td>
-                  <span class="badge badge-pill badge-primary">UP</span>
+                  <span v-if="server.__Infrary__Status === 'up'" class="badge badge-pill badge-primary">UP</span>
+                  <span v-if="server.__Infrary__Status === 'down'" class="badge badge-pill badge-danger">DOWN</span>
+                  <span v-if="server.__Infrary__Status === 'configuring'" class="badge badge-pill badge-warning">CONFIGURING</span>
+                  <span v-if="server.__Infrary__Status === 'created'" class="badge badge-pill badge-warning">CREATED</span>
                 </td>
                 <td align="middle">{{server.__Infrary__ID}}</td>
                 <td align="middle">{{server.__Infrary__Provider}}</td>
@@ -105,6 +108,13 @@
       updateTableData () {
         this.servers = this.apiData
         this.$store.commit('setLoading', false)
+      },
+      trClassGen (server) {
+        return {
+          'table-success': server.__Infrary__Status === 'up',
+          'table-danger': server.__Infrary__Status === 'down',
+          'table-warning': server.__Infrary__Status === 'created' || server.__Infrary__Status === 'configuting'
+        }
       }
     }
   }

@@ -4,31 +4,26 @@ from flask import Flask, request, g
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 
-# todo undebug
-# OCTO "Constants" to tell microservices who to talk to (and how)
-API_VERSION = "v0"
-CONTAINER_HANDLER = 'local'
-
-OCTOCORE_DOMAIN = '10.0.75.1'
-OCTOCORE_PORT = 5000
-OCTOCORE_SERVER_SUBMIT_PATH = '/{}/servers/provision/configure'.format(API_VERSION)
-OCTOCORE_CONFIGURED_SERVER_SUBMIT_PATH = '/{}/servers/provision/initialise'.format(API_VERSION)
+import os
+import sys
+ROOT_PATH = os.path.dirname(__file__)
+sys.path.append(os.path.join(ROOT_PATH, '..'))
+from constants import *
 
 # Connect to mongoDB
 app = Flask(__name__)
 CORS(app)
-app.config['MONGO_DBNAME'] = 'infrarydev'
-app.config['MONGO_URI'] = 'mongodb://gentleseal:eQi2ZdxZLhf4bc5xJ@ds241065.mlab.com:41065/infrarydev'
+app.config['MONGO_DBNAME'] = DB_NAME
+app.config['MONGO_URI'] = DB_URI
 flask_pymongo = PyMongo(app)
-
-AUTHPATH = "/{}/auth".format(API_VERSION)
-
 # noinspection PyPep8
 import logic
 
 
 @app.before_request
 def do_auth():
+    print request.headers
+    print request.get_data()
     if request.method not in ["OPTIONS"]:
         if request.path[:len(AUTHPATH)] != AUTHPATH:
             print request.headers
@@ -39,16 +34,16 @@ def do_auth():
                 if "Bearer" in supplied_auth_header:
                     token = supplied_auth_header.split(' ')[1]  # todo: actually do auth (microservice?)
                     try:
-                        decoded_token = jwt.decode(token, 'totallysecure', algorithms='HS256')
+                        decoded_token = jwt.decode(token, SECRET_TOKEN_ENC_KEY, algorithms='HS256')
                     except jwt.InvalidTokenError:
                         raise ValueError('Authentication failed.')
                     else:
-                        g.user_id = decoded_token.get('uid')
+                        g.user_id = decoded_token.get(TOKEN_USER_ID_KEY)
                         g.token = token
                 else:
                     raise ValueError('No auth token supplied.')
             except Exception as e:
-                return "401 Unauthorized\n{}\n\n".format(e), 401
+                return "Unauthorized: {}".format(e), 401
 
 
 @app.route("/{}/auth/register".format(API_VERSION), methods=['POST'])
@@ -56,19 +51,19 @@ def register():
     request_dict = request.get_json()
 
     if not isinstance(request_dict, dict):
-        return "400 Bad Request\n{}\n\n".format("Bad request format"), 400
+        return "Bad request format", 400
 
-    first_name = request_dict.get("firstName")
-    last_name = request_dict.get("lastName")
-    email = request_dict.get("email")
-    password = request_dict.get("password")
+    first_name = request_dict.get(FIRST_NAME_KEY)
+    last_name = request_dict.get(LAST_NAME_KEY)
+    email = request_dict.get(EMAIL_KEY)
+    password = request_dict.get(PASSWORD_KEY)
 
     if first_name and isinstance(first_name, basestring) and last_name and isinstance(last_name, basestring) \
             and email and isinstance(email, basestring) and password and isinstance(password, basestring):
         return logic.User.register(first_name, last_name, email, password)
 
     else:
-        return "400 Bad Request\n{}\n\n".format("Parameters invalid or empty"), 400
+        return "Parameters invalid or empty", 400
 
 
 @app.route("/{}/auth/verify".format(API_VERSION), methods=['POST'])
@@ -76,14 +71,14 @@ def verify():
     request_dict = request.get_json()
 
     if not isinstance(request_dict, dict):
-        return "400 Bad Request\n{}\n\n".format("Bad request format"), 400
+        return "Bad request format", 400
 
-    email_key = request_dict.get("emailKey")
+    email_key = request_dict.get(EMAIL_KEY_KEY)
 
     if email_key and isinstance(email_key, basestring):
         return logic.User.verify(email_key)
     else:
-        return "400 Bad Request\n{}\n\n".format("Invalid emailKey or emailKey not specified"), 400
+        return "Invalid emailKey or emailKey not specified", 400
 
 
 @app.route("/{}/auth/login".format(API_VERSION), methods=['POST'])
@@ -91,43 +86,58 @@ def login():
     request_dict = request.get_json()
 
     if not isinstance(request_dict, dict):
-        return "400 Bad Request\n{}\n\n".format("Bad request format"), 400
+        return "Bad request format", 400
 
-    email = request_dict.get("email")
-    password = request_dict.get("password")
+    email = request_dict.get(EMAIL_KEY)
+    password = request_dict.get(PASSWORD_KEY)
 
     if email and isinstance(email, basestring) and password and isinstance(password, basestring):
         return logic.User.login(email, password)
     else:
-        return "400 Bad Request\n{}\n\n".format("Invalid credentials format or credentials not specified"), 400
+        return "Invalid credentials format or credentials not specified", 400
 
 
-@app.route("/{}/servers/<string:provider>/<int:server_id>".format(API_VERSION), methods=["GET"])
-def get_server(provider=None, server_id=None):
-    if server_id and provider:
-        return logic.Server.get(provider, server_id, g.user_id)
+@app.route("/{}/servers/<string:server_provider>/<int:server_id>".format(API_VERSION), methods=["GET"])
+def get_server(server_provider, server_id):
+    return logic.Server.get(server_provider, server_id, g.user_id)
+
+
+@app.route("/{}/servers/<string:server_provider>/<int:server_id>".format(API_VERSION), methods=["POST"])
+def set_server(server_provider, server_id):
+
+    request_dict = request.get_json()
+
+    if not isinstance(request_dict, dict):
+        return "Bad request format", 400
+
+    action = request_dict.get(ACTION_KEY)
+
+    if action and isinstance(action, basestring):
+        if action == SET_STATUS_ACTION:
+            status = request_dict.get(STATUS_KEY)
+            if status and isinstance(status, basestring):
+                return logic.Server.update_status(server_provider, server_id, g.user_id, status)
+        else:
+            return "Status invalid or empty", 400
+
     else:
-        return "No server id or provider specified", 404
+        return "Action invalid or empty", 400
 
 
-@app.route("/{}/servers/<string:provider>/<int:server_id>".format(API_VERSION), methods=["DELETE"])
-def delete_server(provider=None, server_id=None):
-    if server_id and provider:
-        force_delete = False
-        try:
-            args = request.get_json()
-            if args is not None:
-                if args['force']:
-                    force_delete = True
-        except (TypeError, ValueError):
-            pass  # forceDelete False by default
+@app.route("/{}/servers/<string:server_provider>/<int:server_id>".format(API_VERSION), methods=["DELETE"])
+def delete_server(server_provider, server_id):
+    force_delete = False
+    try:
+        args = request.get_json()
+        if args is not None:
+            if args[FORCE_KEY]:
+                force_delete = True
+    except (TypeError, ValueError, KeyError):
+        pass  # forceDelete False by default
 
-        print force_delete  # todo
+    print force_delete  # todo
 
-        return logic.Server.delete(provider, server_id, force_delete, g.user_id, g.token)
-
-    else:
-        return "No server id specified", 404
+    return logic.Server.delete(server_provider, server_id, force_delete, g.user_id, g.token)
 
 
 @app.route("/{}/servers".format(API_VERSION))
@@ -140,10 +150,10 @@ def create_server():
     request_dict = request.get_json()
 
     if not isinstance(request_dict, dict):
-        return "400 Bad Request\n{}\n\n".format("Bad request format"), 400
+        return "Bad request format", 400
 
-    server_properties = request_dict.get("serverProperties")
-    vm_configuration = request_dict.get("VMConfiguration")
+    server_properties = request_dict.get(SERVER_PROPERTIES_KEY)
+    vm_configuration = request_dict.get(VM_CONFIGURATION_KEY)
 
     # todo more checks here
 
@@ -151,22 +161,23 @@ def create_server():
             and isinstance(vm_configuration, dict):
         return logic.Server.create(server_properties, vm_configuration, g.token)
     else:
-        return "400 Bad Request\n{}\n\n".format("Parameters invalid or empty"), 400
+        return "Parameters invalid or empty", 400
 
 
 @app.route("/{}/servers/provision/configure".format(API_VERSION), methods=['POST'])
+@app.route("/{}/servers/provision/conf".format(API_VERSION), methods=['POST'])
 def configure_server():  # todo Accessible to users ???
     request_dict = request.get_json()
     print request_dict
 
     if not isinstance(request_dict, dict):
-        return "400 Bad Request\n{}\n\n".format("Bad request format"), 400
+        return "Bad request format", 400
 
-    temp_key = request_dict.get('__Infrary__TempSSHKey')
-    server_hostname = request_dict.get('__Infrary__IP')
-    server_provider = request_dict.get('__Infrary__Provider')
-    server_id = request_dict.get('__Infrary__ID')
-    vm_configuration = request_dict.get("__Infrary__VMConfiguration")
+    temp_key = request_dict.get(TEMP_SSH_KEY_EXP_KEY)
+    server_hostname = request_dict.get(IP_EXP_KEY)
+    server_provider = request_dict.get(PROVIDER_EXP_KEY)
+    server_id = request_dict.get(ID_EXP_KEY)
+    vm_configuration = request_dict.get(VM_CONFIGURATION_EXP_KEY)
 
     print type(server_id), type(vm_configuration)
 
@@ -182,30 +193,31 @@ def configure_server():  # todo Accessible to users ???
                                       server_id, vm_configuration, g.user_id, g.token)
 
     else:
-        return "400 Bad Request\n{}\n\n".format("Parameters invalid or empty"), 400
+        return "Parameters invalid or empty", 400
 
 
 @app.route("/{}/servers/provision/initialize".format(API_VERSION), methods=['POST'])
 @app.route("/{}/servers/provision/initialise".format(API_VERSION), methods=['POST'])
+@app.route("/{}/servers/provision/init".format(API_VERSION), methods=['POST'])
 def initialise_server():
     request_dict = request.get_json()
 
     if not isinstance(request_dict, dict):
-        return "400 Bad Request\n{}\n\n".format("Bad request format"), 400
+        return "Bad request format", 400
 
-    server_provider = request_dict.get('__Infrary__Provider')
-    server_id = request_dict.get('__Infrary__ID')
-    is_master = request_dict.get('__Infrary__IsMaster')  # optional
-    do_self_destruct = request_dict.get('__Infrary__SelfDestruct')  # optional
-    master_conf = request_dict.get('__Infrary__MasterConf')  # optional
+    server_provider = request_dict.get(PROVIDER_EXP_KEY)
+    server_id = request_dict.get(ID_EXP_KEY)
+    is_master = request_dict.get(IS_MASTER_EXP_KEY)  # optional
+    do_self_destruct = request_dict.get(SELF_DESTRUCT_EXP_KEY)  # optional
+    master_conf = request_dict.get(MASTERCONF_EXP_KEY)  # optional
 
     try:
         if is_master is True:
             is_master = True
-            if not isinstance(master_conf['host'], basestring) \
-                    or not isinstance(master_conf['user'], basestring) \
-                    or not isinstance(master_conf['pass'], basestring) \
-                    or not isinstance(master_conf['keySecret'], basestring):
+            if not isinstance(master_conf[MASTERCONF_HOST_KEY], basestring) \
+                    or not isinstance(master_conf[MASTERCONF_USER_KEY], basestring) \
+                    or not isinstance(master_conf[MASTERCONF_PASSWORD_KEY], basestring) \
+                    or not isinstance(master_conf[MASTERCONF_SECRET_KEY], basestring):
                 raise ValueError("something wrong")
         else:
             is_master = False
@@ -218,7 +230,25 @@ def initialise_server():
         return logic.Server.initialise(server_id, server_provider, g.user_id, g.token, is_master, do_self_destruct,
                                        master_conf)
     else:
-        return "400 Bad Request\n{}\n\n".format("Parameters invalid or empty"), 400
+        return "Parameters invalid or empty", 400
+
+
+@app.route("/{}/servers/{}/meta".format(API_VERSION, DIGITAL_OCEAN_PROVIDER_CODE), methods=['GET'])
+def do_meta():
+    request_dict = request.args
+    print request_dict
+
+    if not isinstance(request_dict, dict):
+        return "Bad request format", 400
+
+    token = request_dict.get(TOKEN_KEY)
+
+    if token and isinstance(token, basestring):
+        return logic.Do.get_metadata(token)
+    else:
+        return "Bad request format", 400
+
+
 
 
 @app.route("/".format(API_VERSION))

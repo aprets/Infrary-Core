@@ -1,9 +1,9 @@
-from main import *
+import requests
 import base64
 import hashlib
 
 
-class DoDroplet(Server):
+class DoDroplet(object):
     def __init__(self, access_token=None, server_id=None, status=None, name=None, created_at=None, size=None,
                  networks=None,
                  image=None, region=None, raw_droplet_dict=None, ssh_keys=None):  # TODO force ssh key to be passed
@@ -18,7 +18,9 @@ class DoDroplet(Server):
             region = {}
         self.__accessToken = access_token
         self.__headers = {'Authorization': 'Bearer ' + self.__accessToken, 'Content-Type': 'application/json'}
-        self.__HTTPSClient = HTTPClient(self.__headers, 'api.digitalocean.com')
+        self.__base_url = "https://api.digitalocean.com"
+        self.__session = requests.Session()
+        self.__session.headers.update(self.__headers)
         if raw_droplet_dict:
             self.fill_properties_from_dict(raw_droplet_dict)
         self.id = server_id
@@ -59,16 +61,15 @@ class DoDroplet(Server):
         print body
 
         try:
-            do_response = self.__HTTPSClient.post('/v2/account/keys', body)
+            do_response = self.__session.post(self.__base_url+'/v2/account/keys', data=body)
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
             return False, e.message
-        do_response.json_decode()
-        if do_response.status == 201:
+        if do_response.status_code == 201:
             print ('Key successfully created!')
             return True, ''
-        elif do_response.status == 422 and do_response.body.get(
+        elif do_response.status_code == 422 and do_response.json().get(
                 "message") == u'SSH Key is already in use on your account':
             print ('Key already exists!')
             return True, ''
@@ -100,14 +101,13 @@ class DoDroplet(Server):
         print body
 
         try:
-            do_response = self.__HTTPSClient.post('/v2/droplets', body)
+            do_response = self.__session.post(self.__base_url+'/v2/droplets', data=body)
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
             return False, e.message
-        do_response.json_decode()
-        if do_response.status == 202:
-            self.fill_properties_from_dict(do_response.body['droplet'])
+        if do_response.status_code == 202:
+            self.fill_properties_from_dict(do_response.json()['droplet'])
             print 'Waiting for the droplet to become active'
             while self.status != 'active':
                 print '...'
@@ -120,14 +120,13 @@ class DoDroplet(Server):
 
     def update(self):
         try:
-            do_response = self.__HTTPSClient.get('/v2/droplets/{}'.format(self.id))  # todo: handle no ip
+            do_response = self.__session.get(self.__base_url+'/v2/droplets/{}'.format(self.id))  # todo: handle no ip
         except Exception as e:
             print "Could not connect to DO API"
             print e.message
             return False, e.message
-        if do_response.status == 200:
-            do_response.json_decode()
-            self.fill_properties_from_dict(do_response.body['droplet'])
+        if do_response.status_code == 200:
+            self.fill_properties_from_dict(do_response.json()['droplet'])
             return True, ''
         else:
             print "Failed to update droplet information! Response from DO API:"
@@ -135,7 +134,7 @@ class DoDroplet(Server):
             return False, do_response
 
     def destroy(self):
-        return self.__HTTPSClient.delete('/v2/droplets/{}'.format(self.id))
+        return self.__session.delete(self.__base_url+'/v2/droplets/{}'.format(self.id))
 
     def __str__(self):
         return '\n'.join("%s=%s" % obj_property for obj_property in vars(self).items())
@@ -147,5 +146,4 @@ class DoDroplet(Server):
 #     print myDroplet
 #     print myDroplet.destroy()
 #     time.sleep(5)
-#     myDroplet.update()
-#     print myDroplet
+#     m

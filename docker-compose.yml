@@ -1,0 +1,12 @@
+version: '3.3'
+services:
+      provisioner:
+        build:
+          context: ./
+          dockerfile: ./Provisioner/Dockerfile
+        image: provisioner
+      vmconf:
+        build:
+          context: ./
+          dockerfile: ./VMConf/Dockerfile
+        image: vmconf

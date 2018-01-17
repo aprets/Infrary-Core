@@ -1,24 +1,23 @@
 from do import *
-from main import *
+import requests
 import os
-import json
 import sys
+
+from constants import *
 
 # crypto stuff
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 
-# serverProvider = os.environ['SERVER_PROVIDER']
-
 # todo debug
-OCTOCORE_DOMAIN = os.environ['OCTOCORE_DOMAIN']
-OCTOCORE_PORT = os.environ['OCTOCORE_PORT']
-OCTOCORE_SERVER_SUBMIT_PATH = os.environ['OCTOCORE_SERVER_SUBMIT_PATH']
+OCTOCORE_DOMAIN = os.environ[OCTO_DOMAIN_KEY]
+OCTOCORE_PORT = os.environ[OCTO_PORT_KEY]
+OCTOCORE_SERVER_SUBMIT_PATH = os.environ[OCTO_SERVER_SUBMIT_PATH_KEY]
 
-server_provider = os.environ['SERVER_PROVIDER']
+server_provider = os.environ[PROVISIONER_PROVIDER_KEY]
 
-if sys.argv[1] == 'create':
+if sys.argv[1] == PROVISIONER_CREATE_COMMAND:
 
     tmp_key_object = rsa.generate_private_key(backend=default_backend(), public_exponent=65537, key_size=2048)
     tmp_pem_key_enc = tmp_key_object.private_bytes(encoding=serialization.Encoding.PEM,
@@ -30,15 +29,15 @@ if sys.argv[1] == 'create':
     tmp_pub_oss_key_str = tmp_pub_oss_key_enc.decode('utf-8')
 
     # noinspection SpellCheckingInspection
-    if server_provider == "DO":
+    if server_provider == DIGITAL_OCEAN_PROVIDER_CODE:
 
-        access_token = os.environ['ACCESS_TOKEN']
-        server_name = os.environ['SERVER_NAME']
-        server_size = os.environ['SERVER_SIZE']
-        server_image = os.environ['SERVER_IMAGE']
-        server_location = os.environ['SERVER_LOCATION']
-        ssh_key = os.environ['SSH_KEY']
-        octo_token = os.environ['OCTO_TOKEN']
+        access_token = os.environ[PROVISIONER_ACCESS_TOKEN_KEY]
+        server_name = os.environ[PROVISIONER_SERVER_NAME_KEY]
+        server_size = os.environ[PROVISIONER_SERVER_SIZE_KEY]
+        server_image = os.environ[PROVISIONER_SERVER_IMAGE_KEY]
+        server_location = os.environ[PROVISIONER_SERVER_LOCATION_KEY]
+        ssh_key = os.environ[PROVISIONER_SSH_KEY_KEY]
+        octo_token = os.environ[OCTO_TOKEN_KEY]
 
         if not access_token or not server_name or not server_image or not server_location or not server_size \
                 or not ssh_key or not octo_token:
@@ -69,7 +68,7 @@ if sys.argv[1] == 'create':
         octo_token
 
     except NameError:
-        print "well, it WASN'T defined after all!"
+        print "well, it WASN'T defined after all!"  # TODO
         exit(1)
 
     print "Starting the provisioning process..."
@@ -81,18 +80,17 @@ if sys.argv[1] == 'create':
             for k, v in vars(server).items():  # m/b do not do this? rely on further code for fetching? todo ?
                 if k[0] != '_':
                     server_property_dict[k] = v
-            server_property_dict['__Infrary__Provider'] = server_provider
-            server_property_dict['__Infrary__ID'] = server.id
-            server_property_dict['__Infrary__IP'] = server.networks[u'v4'][0][u'ip_address']
-            server_property_dict['__Infrary__VMConfiguration'] = os.environ['VMConfiguration']
-            server_property_dict['__Infrary__SSHKeyFingerprint'] = server.SSHFingerprints[1]
-            server_property_dict['__Infrary__TempSSHKey'] = tmp_pem_key_str
+            server_property_dict[PROVIDER_EXP_KEY] = server_provider
+            server_property_dict[ID_EXP_KEY] = server.id
+            server_property_dict[IP_EXP_KEY] = server.networks[u'v4'][0][u'ip_address']
+            server_property_dict[VM_CONFIGURATION_EXP_KEY] = os.environ['VMConfiguration']
+            server_property_dict[SSH_KEY_FINGERPRINT_EXP_KEY] = server.SSHFingerprints[1]
+            server_property_dict[TEMP_SSH_KEY_EXP_KEY] = tmp_pem_key_str
             # noinspection PyUnboundLocalVariable
-            server_property_dict['__Infrary__AccessToken'] = access_token
+            server_property_dict[ACCESS_TOKEN_EXP_KEY] = access_token
             # noinspection PyUnboundLocalVariable
             headers = {'Authorization': 'Bearer ' + octo_token, 'Content-Type': 'application/json'}
-            http_client = HTTPClient(headers, OCTOCORE_DOMAIN, OCTOCORE_PORT, False)
-            http_client.post(OCTOCORE_SERVER_SUBMIT_PATH, json.dumps(server_property_dict))
+            requests.post(OCTO_URL + OCTOCORE_SERVER_SUBMIT_PATH, json=server_property_dict, headers=headers)
             print "Great success!"
         except Exception as e:
             print ("Unable to submit data to OctoCore"), e  # TODO use production name
@@ -113,13 +111,50 @@ if sys.argv[1] == 'create':
         except (ValueError, TypeError):
             pass
 
-elif sys.argv[1] == 'destroy':
+elif sys.argv[1] == PROVISIONER_DESTROY_COMMAND:
 
-    if server_provider == "DO":
-        access_token = os.environ['ACCESS_TOKEN']
-        serverId = os.environ['SERVER_ID']
-        octo_token = os.environ['OCTO_TOKEN']
+    def submit_status(server_provider, server_id, status):
+        print("boii")
+        try:
+            headers_delete = {'Authorization': 'Bearer ' + octo_token, 'Content-Type': 'application/json'}
+            print("boiii")
+            requests.post(OCTO_URL + OCTO_SERVER_STATUS_SUBMIT_PATH.format(
+                server_id=server_id,
+                server_provider=server_provider),
+                          json=
+                          {
+                              ACTION_KEY: SET_STATUS_ACTION,
+                              STATUS_KEY: status,
 
-        server = DoDroplet(access_token=access_token, server_id=serverId)
+                          }, headers=headers_delete)
+            print("boiiii")
+        except Exception as e:
+            print ("Unable to submit data to OctoCore"), e  # TODO use production name
+        finally:
+            # print json.dumps(server, default=lambda o: o.__dict__)
+            # debug
+            print "\n\n\n\nDebug stuff:\n"
+            print status, os.environ
+
+
+    if server_provider == DIGITAL_OCEAN_PROVIDER_CODE:
+        access_token = os.environ[PROVISIONER_ACCESS_TOKEN_KEY]
+        server_id = os.environ[PROVISIONER_SERVER_ID_KEY]
+        octo_token = os.environ[OCTO_TOKEN_KEY]
+
+        server = DoDroplet(access_token=access_token, server_id=server_id)
         response = server.destroy()
-        print response.status
+        print("boi")
+        print response, response.status_code, response.text
+        if response.status_code == 204:
+            submit_status(server_provider, server_id, DELETED_STATUS)
+
+        elif response.status_code == 404:
+            submit_status(server_provider, server_id, FAILED_DELETE_PROVIDER_STATUS)
+
+        else:
+            submit_status(server_provider, server_id, FAILED_DELETE_STATUS)
+            # todo extend submission for error reporting
+
+    else:
+        exit(1)

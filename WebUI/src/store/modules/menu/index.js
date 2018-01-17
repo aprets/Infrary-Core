@@ -7,10 +7,12 @@ import maps from './maps'
 import tables from './tables'
 import auth from './auth'
 import extra from './extra'
+import servers from './servers'
 
 const state = {
   items: [
     dashboard,
+    servers,
     statistics,
     forms,
     tables,

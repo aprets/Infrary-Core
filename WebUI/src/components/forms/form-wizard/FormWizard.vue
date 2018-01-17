@@ -248,7 +248,7 @@
     },
     data () {
       return {
-        hsSteps: [
+        wizardSteps: [
           {
             label: 'Step 1. Name',
             slot: 'page1',

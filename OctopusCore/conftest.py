@@ -1,3 +1,8 @@
+import os
+import sys
+ROOT_PATH = os.path.dirname(__file__)
+sys.path.append(os.path.join(ROOT_PATH, '..'))
+
 import json
 import random
 import string
@@ -46,6 +51,7 @@ def server():
     time.sleep(1)
     yield server
     server.terminate()
+
 
 def get_int():
     return random.randint(-3665, 3665)

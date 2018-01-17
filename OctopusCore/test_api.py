@@ -1,5 +1,6 @@
 from flask import url_for
 from conftest import *
+from constants import *
 
 
 #
@@ -22,13 +23,14 @@ def test_auth(client, auth_headers):
 
 @pytest.mark.parametrize("input_data, expected_code",
                          [
-                             ('{"firstName":"a","lastName":"b","email":"d","password":"c"}', 200)
+                             (json.dumps({FIRST_NAME_KEY: "a", LAST_NAME_KEY: "b", EMAIL_KEY: "d", PASSWORD_KEY: "c"}),
+                              200)
                          ] + autogen_tests(
                              (
-                                     {"firstName": [get_everything_but_not_empty_string_list(), "a"],
-                                      "lastName": [get_everything_but_not_empty_string_list(), "b"],
-                                      "email": [get_everything_but_not_empty_string_list(), "a@b.c"],
-                                      "password": [get_everything_but_not_empty_string_list(), "a"]}
+                                     {FIRST_NAME_KEY: [get_everything_but_not_empty_string_list(), "a"],
+                                      LAST_NAME_KEY: [get_everything_but_not_empty_string_list(), "b"],
+                                      EMAIL_KEY: [get_everything_but_not_empty_string_list(), "a@b.c"],
+                                      PASSWORD_KEY: [get_everything_but_not_empty_string_list(), "a"]}
                                      , 400)
                          ))
 def test_register_input_filtering(monkeypatch, client, input_data, expected_code):
@@ -41,11 +43,11 @@ def test_register_input_filtering(monkeypatch, client, input_data, expected_code
 # noinspection SpellCheckingInspection
 @pytest.mark.parametrize("input_data, expected_code",
                          [
-                             ('{"emailKey":"aw34tuya4ADF"}', 200),
+                             (json.dumps({EMAIL_KEY_KEY: "aw34tuya4ADF"}), 200),
                              ('', 400)
                          ] + autogen_tests(
                              (
-                                     {"emailKey": [[get_int(), get_float(), "", 0, 0.0, {}, []], "aw34tuya4ADF"]}
+                                     {EMAIL_KEY_KEY: [[get_int(), get_float(), "", 0, 0.0, {}, []], "aw34tuya4ADF"]}
                                      , 400)
                          ))
 def test_verify_input_filtering(monkeypatch, client, input_data, expected_code):
@@ -57,12 +59,12 @@ def test_verify_input_filtering(monkeypatch, client, input_data, expected_code):
 
 @pytest.mark.parametrize("input_data, expected_code",
                          [
-                             ('{"email":"a","password":"b"}', 200),
+                             (json.dumps({EMAIL_KEY: "a", PASSWORD_KEY: "b"}), 200),
                              ('', 400)
                          ] + autogen_tests(
                              (
-                                     {"email": [get_everything_but_not_empty_string_list(), "a@b.c"],
-                                      "password": [get_everything_but_not_empty_string_list(), "a"]}
+                                     {EMAIL_KEY: [get_everything_but_not_empty_string_list(), "a@b.c"],
+                                      PASSWORD_KEY: [get_everything_but_not_empty_string_list(), "a"]}
                                      , 400)
                          ))
 def test_login_input_filtering(monkeypatch, client, input_data, expected_code):
@@ -115,11 +117,11 @@ def test_servers_list_input_filtering(monkeypatch, client, auth_headers):
 # noinspection PyShadowingNames
 @pytest.mark.parametrize("input_data, expected_code",
                          [
-                             ('{"serverProperties":{"asd":0}, "VMConfiguration":{"asd":0}}', 200),
+                             (json.dumps({SERVER_PROPERTIES_KEY: {"asd": 0}, VM_CONFIGURATION_KEY: {"asd": 0}}), 200),
                          ] + autogen_tests(
                              (
-                                     {"serverProperties": [get_everything_but_dict_list(), {"asd": 0}],
-                                      "VMConfiguration": [get_everything_but_dict_list(), {"asd": 0}]}
+                                     {SERVER_PROPERTIES_KEY: [get_everything_but_dict_list(), {"asd": 0}],
+                                      VM_CONFIGURATION_KEY: [get_everything_but_dict_list(), {"asd": 0}]}
                                      , 400)
                          ))
 def test_server_create_input_filtering(monkeypatch, client, input_data, expected_code, auth_headers):
@@ -129,23 +131,14 @@ def test_server_create_input_filtering(monkeypatch, client, input_data, expected
                        data=input_data, headers=auth_headers).status_code == expected_code
 
 
-# Relatively complex test data to ensure multiple escape levels [eg. in commandList] still function
-
-VALID_SERVER_CONFIGURE_REQUEST_DATA = (r'' '\n'
-                                       r'{"__Infrary__VMConfiguration": "{\"isMaster\": true, \"selfDestruct\": true, '
-                                       r'\"cmdList\": [\"curl https://releases.rancher.com/install-docker/17.06.sh | '
-                                       r'sh\", \"service ntp stop\", \"update-rc.d -f ntp remove\", \"fallocate -l 4G '
-                                       r'/swapfile\", \"chmod 600 /swapfile\", \"mkswap /swapfile\",'
-                                       r'\"swapon /swapfile\", \"echo \\\"/swapfile   none    swap    sw    0   0\\\" '
-                                       r'>> /etc/fstab\", \"docker run -d --restart=unless-stopped -p 8080:8080 '
-                                       r'rancher/server\", \"sleep 60\"]}",'
-                                       r'"__Infrary__AccessToken": "24879haThis1$NoT\/3RyR3@L",'
-                                       r'"__Infrary__Provider": "GoodServers Ltd.",'
-                                       r'"__Infrary__SSHKeyFingerprint": '
-                                       r'"92:aa:45:bb:a8:cc:dd:3d:ee:ff:a4:55:gg:33:aa:d0", '
-                                       r'"__Infrary__IP": "127.0.0.1",'
-                                       r'"__Infrary__ID": 123455,'
-                                       r'"__Infrary__TempSSHKey": "aRealKeyHere"}')
+VALID_SERVER_CONFIGURE_REQUEST_DATA = json.dumps({VM_CONFIGURATION_EXP_KEY: "TEST",
+                                                  ACCESS_TOKEN_EXP_KEY: "24879haThis1$NoT\\/3RyR3@L",
+                                                  PROVIDER_EXP_KEY: "GoodServers Ltd.",
+                                                  SSH_KEY_FINGERPRINT_EXP_KEY:
+                                                      "92:aa:45:bb:a8:cc:dd:3d:ee:ff:a4:55:gg:33:aa:d0",
+                                                  IP_EXP_KEY: "127.0.0.1",
+                                                  ID_EXP_KEY: 123455,
+                                                  TEMP_SSH_KEY_EXP_KEY: "aRealKeyHere"})
 
 
 # noinspection PyShadowingNames
@@ -155,17 +148,16 @@ VALID_SERVER_CONFIGURE_REQUEST_DATA = (r'' '\n'
 
                          ] + autogen_tests(
                              (
-                                     {"__Infrary__VMConfiguration": [[get_int(), get_float(), "", {}, []],
-                                                                     json.loads(VALID_SERVER_CONFIGURE_REQUEST_DATA)
-                                                                     ["__Infrary__VMConfiguration"]],
-                                      "__Infrary__AccessToken": [[get_int(), get_float(), "", {}, []], "8hgfR32"],
-                                      "__Infrary__SSHKeyFingerprint": [get_everything_but_not_empty_string_list(),
-                                                                       "92:aa:45:bb:a8:cc:dd:3d:ee:ff:a4:55:gg:33:aa:d0"
-                                                                       ],
-                                      "__Infrary__IP": [[get_int(), get_float(), "", {}, []], "127.0.0.1"],
-                                      "__Infrary__ID": [[get_string(), get_float(), {}, []], "123455"],
-                                      "__Infrary__Provider": [[get_int(), get_float(), "", {}, []], "DO"],
-                                      "__Infrary__TempSSHKey": [[get_int(), get_float(), "", {}, []], "ttr//A=-"]}
+                                     {VM_CONFIGURATION_EXP_KEY: [[get_int(), get_float(), "", {}, []],
+                                                                 VALID_SERVER_CONFIGURE_REQUEST_DATA],
+                                      ACCESS_TOKEN_EXP_KEY: [[get_int(), get_float(), "", {}, []], "8hgfR32"],
+                                      SSH_KEY_FINGERPRINT_EXP_KEY: [get_everything_but_not_empty_string_list(),
+                                                                    "92:aa:45:bb:a8:cc:dd:3d:ee:ff:a4:55:gg:33:aa:d0"
+                                                                    ],
+                                      IP_EXP_KEY: [[get_int(), get_float(), "", {}, []], "127.0.0.1"],
+                                      ID_EXP_KEY: [[get_string(), get_float(), {}, []], "123455"],
+                                      PROVIDER_EXP_KEY: [[get_int(), get_float(), "", {}, []], "DO"],
+                                      TEMP_SSH_KEY_EXP_KEY: [[get_int(), get_float(), "", {}, []], "ttr//A=-"]}
                                      , 400)
                          ))
 def test_server_configure_input_filtering(monkeypatch, client, input_data, expected_code, auth_headers):
@@ -179,20 +171,20 @@ def test_server_configure_input_filtering(monkeypatch, client, input_data, expec
 # noinspection PyShadowingNames
 @pytest.mark.parametrize("input_data, expected_code",
                          [
-                             ('{"__Infrary__Provider": "GoodServers Ltd.", "__Infrary__ID": 123455}', 200),
-                             ('{"__Infrary__Provider": "GoodServers Ltd.", "__Infrary__ID": 123455,'
-                              ' "__Infrary__IsMaster": true}', 200),
-                             ('{"__Infrary__Provider": "GoodServers Ltd.", "__Infrary__ID": 123455,'
-                              ' "__Infrary__IsMaster": false}', 200),
-                             ('{"__Infrary__Provider": "GoodServers Ltd.", "__Infrary__ID": 123455,'
-                              ' "__Infrary__SelfDestruct": true}', 200),
-                             ('{"__Infrary__Provider": "GoodServers Ltd.", "__Infrary__ID": 123455,'
-                              ' "__Infrary__SelfDestruct": false}', 200),
+                             (json.dumps({PROVIDER_EXP_KEY: "GoodServers Ltd.", ID_EXP_KEY: 123455}), 200),
+                             (json.dumps({PROVIDER_EXP_KEY: "GoodServers Ltd.", ID_EXP_KEY: 123455,
+                                          IS_MASTER_EXP_KEY: True}), 200),
+                             (json.dumps({PROVIDER_EXP_KEY: "GoodServers Ltd.", ID_EXP_KEY: 123455,
+                                          IS_MASTER_EXP_KEY: False}), 200),
+                             (json.dumps({PROVIDER_EXP_KEY: "GoodServers Ltd.", ID_EXP_KEY: 123455,
+                                          SELF_DESTRUCT_EXP_KEY: True}), 200),
+                             (json.dumps({PROVIDER_EXP_KEY: "GoodServers Ltd.", ID_EXP_KEY: 123455,
+                                          SELF_DESTRUCT_EXP_KEY: False}), 200),
 
                          ] + autogen_tests(
                              (
-                                     {"__Infrary__ID": [get_everything_but_int_list(), 123455],
-                                      "__Infrary__Provider": [get_everything_but_not_empty_string_list(), "DO"]}
+                                     {ID_EXP_KEY: [get_everything_but_int_list(), 123455],
+                                      PROVIDER_EXP_KEY: [get_everything_but_not_empty_string_list(), "DO"]}
                                      , 400)
                          ))
 def test_server_initialise_input_filtering(monkeypatch, client, input_data, expected_code, auth_headers):

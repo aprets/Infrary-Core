@@ -1,9 +1,8 @@
 import jwt
 import time
-from main import *
+import requests
 
-OCTOCORE_DOMAIN = '127.0.0.1'
-OCTOCORE_PORT = 5000
+URL = "http://{}:{}/{}".format('127.0.0.1', 5000, "v0/servers/provision/create")
 
 timestamp = int(time.time())
 
@@ -18,7 +17,6 @@ print jwtToken
 raw_input("Paused for token stealing")
 
 headers = {'Authorization': 'Bearer ' + jwtToken, 'Content-Type': 'application/json'}
-HTTPSClient = HTTPClient(headers, OCTOCORE_DOMAIN, OCTOCORE_PORT, False)
 
 # noinspection SpellCheckingInspection
 '''ENV SERVER_PROVIDER DO ENV ACCESS_TOKEN a7e26ca2837730e171e367dca448252a2e40015aab140079a866ba95996db4c6 ENV 
@@ -47,8 +45,7 @@ VMConfiguration = {"isMaster": True, "selfDestruct": True,
                                "echo \"/swapfile   none    swap    sw    0   0\" >> /etc/fstab",
                                "docker run -d --restart=unless-stopped -p 8080:8080 rancher/server", "sleep 60"]}
 
-body = json.dumps({"serverProperties": serverProperties, "VMConfiguration": VMConfiguration})
 
-response = HTTPSClient.post('/v0/servers/provision/create', body)
+response = requests.post(URL, json={"serverProperties": serverProperties, "VMConfiguration": VMConfiguration}, headers=headers)
 
-print response
+print response.status_code, response.text
