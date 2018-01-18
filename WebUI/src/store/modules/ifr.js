@@ -3,7 +3,7 @@ import Vue from 'vue'
 const state = {
   isVerifyingEmail: false,
   isAuthed: false,
-  apiUrl: 'http://127.0.0.1:5000/v0/',
+  apiUrl: 'https://127.0.0.1:5000/v0/',
   apiToken: ''
 }
 

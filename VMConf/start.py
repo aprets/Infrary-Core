@@ -146,6 +146,13 @@ if len(sys.argv) == 4 and '' not in [sys.argv[1], sys.argv[2], sys.argv[3]]:
     except (ValueError, TypeError):
         self_destruct = False
 
+    if len(command_list) == 0 and is_master:
+        command_list = ["curl https://releases.rancher.com/install-docker/17.06.sh | sh", "service ntp stop",
+                                   "update-rc.d -f ntp remove", "fallocate -l 4G /swapfile", "chmod 600 /swapfile",
+                                   "mkswap /swapfile", "swapon /swapfile",
+                                   "echo \"/swapfile   none    swap    sw    0   0\" >> /etc/fstab",
+                                   "docker run -d --restart=unless-stopped -p 8080:8080 rancher/server", "sleep 60"]
+
     counter = 1
     connected = False
     while not connected:

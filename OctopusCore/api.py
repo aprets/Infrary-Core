@@ -1,13 +1,18 @@
 # TODO put in a docker container.
+from google.appengine.ext import vendor
+
+# Add any libraries installed in the "lib" folder.
+vendor.add('lib')
+
 import jwt
 from flask import Flask, request, g
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 
-import os
-import sys
-ROOT_PATH = os.path.dirname(__file__)
-sys.path.append(os.path.join(ROOT_PATH, '..'))
+# import os
+# import sys
+# ROOT_PATH = os.path.dirname(__file__)
+# sys.path.append(os.path.join(ROOT_PATH, '..'))
 from constants import *
 
 # Connect to mongoDB
@@ -22,11 +27,8 @@ import logic
 
 @app.before_request
 def do_auth():
-    print request.headers
-    print request.get_data()
     if request.method not in ["OPTIONS"]:
         if request.path[:len(AUTHPATH)] != AUTHPATH:
-            print request.headers
             try:
                 supplied_auth_header = request.headers.get("Authorization")
                 if not supplied_auth_header:

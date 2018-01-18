@@ -35,7 +35,7 @@
             name="password"
             type="password"
             v-model="password"
-            v-validate="'required|alpha'"
+            v-validate="'required'"
             required/>
           <i class="fa fa-exclamation-triangle error-icon icon-right input-icon"></i>
           <i class="fa fa-check valid-icon icon-right input-icon"></i>

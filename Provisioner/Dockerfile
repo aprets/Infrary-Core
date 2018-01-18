@@ -8,7 +8,7 @@ RUN apk --update add python py-pip openssl ca-certificates bash git openssh-clie
 WORKDIR /usr/src/app
 
 COPY constants.py .
-COPY Provisioner/do.py .
-COPY Provisioner/start.py .
+COPY do.py .
+COPY start.py .
 
 ENTRYPOINT [ "python", "./start.py" ]

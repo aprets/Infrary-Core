@@ -122,9 +122,16 @@
               </p>
 
               <div class="abc-checkbox abc-checkbox-primary">
-                <input id="isMasterCheckbox" type="checkbox" v-model="doIsMaster" disabled>
+                <input id="isMasterCheckbox" type="checkbox" v-model="doIsMaster">
                 <label for="isMasterCheckbox">
                   <span class="abc-label-text">This is a master server</span>
+                </label>
+              </div>
+
+              <div v-if="doIsMaster" class="abc-checkbox abc-checkbox-primary">
+                <input id="isCustomMasterCheckbox" type="checkbox" v-model="doIsCustomMaster">
+                <label for="isCustomMasterCheckbox">
+                  <span class="abc-label-text">Use custom rancher setup commands</span>
                 </label>
               </div>
 
@@ -135,6 +142,8 @@
                 </label>
               </div>
 
+              <div v-if="!doIsMaster || (doIsMaster && doIsCustomMaster)">
+
               <h5>Command list</h5>
 
               <p>
@@ -142,6 +151,21 @@
                 Commands are executed natively, so you can set variables, create files etc. <br>
                 Hint: Use Enter, Backspace and arrow keys to create, navigate the fields
               </p>
+
+              <div class="wizard-body-actions" >
+                <div class="btn-container" >
+                  <button class="btn btn-secondary btn-micro pull-left" @click="addCommand">
+                    Add
+                  </button>
+                </div>
+
+                <div v-show="doCommandList.length > 1" class="btn-container">
+                  <button class="btn btn-secondary btn-micro pull-right" @click="removeCommand">
+                    Remove
+                  </button>
+                </div>
+
+              </div>
 
               <div v-for="(command, index) in doCommandList" class="form-group">
                 <div class="input-group">
@@ -157,19 +181,6 @@
                   <i class="bar"></i>
                 </div>
               </div>
-
-              <div class="wizard-body-actions" >
-                <div class="btn-container" >
-                  <button class="btn btn-secondary btn-micro pull-left" @click="addCommand">
-                    Add
-                  </button>
-                </div>
-
-                <div v-show="doCommandList.length > 1" class="btn-container">
-                  <button class="btn btn-secondary btn-micro pull-right" @click="removeCommand">
-                    Remove
-                  </button>
-                </div>
 
               </div>
 
@@ -222,7 +233,7 @@
                   </tr>
                   <tr>
                     <td><span class="font-weight-bold vue-green-text">Server Configuration Command List: </span></td>
-                    <td><pre style="width: 30rem">{{doCommandList}}</pre></td>
+                    <td><pre style="width: 30rem">{{doProcessedCommandList}}</pre></td>
                   </tr>
                   </tbody>
                 </table>
@@ -317,6 +328,7 @@
         doServerLocation: 'lon1',
         doServerKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA3KVkFiPI+5RlTiTKsRkjEZr6ssjYFw9Tk0dzoLKYQH8NOWA13tpSo8r6wT7P+yxXG631wGSBfHyarCpuNO8X2sS7y1zWFVIiDvp1cT4sKGF3kfMPjmt5vrfrp+qEzxHDG9oQqCvnYv1NnhIsb+ZgLG+S56z7ssEx+CPpbUU2RE+27/RYxRNjSZQ7l3eNiQyyvBlPBnK+RK6uccUJhG8KfqWB1hOtlJ7H71Mx0RwiLA6as7OK5PuwqkCN5JhzJs48mRjtRE86R0VwKwny/LuPmTMyyz7JCg38C4PDgEXIJrAfuo/TJDcqiJnxPeX4+neDnmXEeVvUqMUnbVNlk8qZ+w==',
         doIsMaster: false,
+        doIsCustomMaster: false,
         doSelfDestruct: true,
         doCommandList: [
           'curl https://releases.rancher.com/install-docker/17.06.sh | sh', 'service ntp stop',
@@ -329,6 +341,17 @@
       }
     },
     computed: {
+      doProcessedCommandList () {
+        if (this.doIsMaster) {
+          if (this.doIsCustomMaster) {
+            return this.doCommandList
+          } else {
+            return []
+          }
+        } else {
+          return this.doCommandList
+        }
+      },
       isDo () {
         return this.provider === 'DO'
       },
@@ -403,11 +426,6 @@
       },
       addCommand () {
         this.doCommandList.push('')
-        this.$nextTick(() => {
-          let index = this.doCommandList.length - 1
-          let input = this.$refs.commandField[index]
-          input.focus()
-        })
       },
       upCommand () {
         let element = document.activeElement
@@ -436,11 +454,6 @@
       },
       removeCommand () {
         this.doCommandList.pop()
-        this.$nextTick(() => {
-          let index = this.doCommandList.length - 1
-          let input = this.$refs.commandField[index]
-          input.focus()
-        })
       },
       removeCommandIfEmpty () {
         let element = document.activeElement
@@ -468,7 +481,7 @@
             VMConfiguration: {
               isMaster: this.doIsMaster,
               selfDestruct: this.doSelfDestruct,
-              cmdList: this.doCommandList
+              cmdList: this.doProcessedCommandList
             }
           })
             .then(response => {
@@ -476,6 +489,9 @@
                 this.submittedServer = true
                 this.$root.$emit('wizardCompleteWizard')
                 this.$store.commit('setLoading', false)
+                setTimeout(() => {
+                  this.$router.push('/dashboard')
+                }, 5000)
               }
             })
             .catch(error => {

@@ -34,7 +34,10 @@
     <div class="row">
       <div class="col-md-12">
         <widget headerText="Servers" buttonText="NEW" buttonRoute="/servers/create">
-          <div class="table-responsive">
+          <div v-if="this.servers.length < 1" class="text-center">
+            <h4>🙈 No servers here 🙉</h4>
+          </div>
+          <div v-else class="table-responsive">
             <table class="table table-striped table-sm color-icon-label-table">
               <thead>
               <tr>
@@ -43,6 +46,7 @@
                 <td align="middle">Provider</td>
                 <td align="middle">Name</td>
                 <td align="middle">IP</td>
+                <td align="middle"></td>
               </tr>
               </thead>
               <tbody>
@@ -57,6 +61,13 @@
                 <td align="middle">{{server.__Infrary__Provider}}</td>
                 <td align="middle">{{server.name}}</td>
                 <td align="middle">{{server.__Infrary__IP}}</td>
+                <td align="middle">
+                  <button class="btn btn-primary btn-with-icon rounded-icon" @click="deleteClick(server)">
+                    <div class="btn-with-icon-content">
+                      <i class="ion-android-close ion"></i>
+                    </div>
+                  </button>
+                </td>
               </tr>
               </tbody>
             </table>
@@ -65,34 +76,59 @@
       </div>
     </div>
 
+    <modal ref="modal" :okText="'DELETE'" :okClass="'btn btn-danger'" v-on:ok="deleteServer">
+      <div slot="title">Destroy Server</div>
+      <div class="text-center">
+        Are you sure you want to permanently remove the server? <br>
+        <span class="vue-highlighted-text">Any data on the server will be deleted!</span>
+      </div>
+    </modal>
+
   </div>
 </template>
 
 <script>
   import Widget from '../vuestic-components/vuestic-widget/VuesticWidget'
+  import Modal from '../vuestic-components/vuestic-modal/VuesticModal'
 
   export default {
     components: {
-      Widget
+      Widget,
+      Modal
     },
     name: 'dashboard',
     data () {
       return {
         apiData: {},
-        servers: []
+        servers: [],
+        dataFilled: false,
+        deleteCallingServer: null
       }
     },
     created () {
       this.updateApiData()
+      this.interval = setInterval(() => {
+        this.updateApiData()
+      }, 10000)
+    },
+    beforeDestroy () {
+      clearInterval(this.interval)
     },
     methods: {
       updateApiData () {
-        this.$store.commit('setLoading', true)
+        if (!this.dataFilled) {
+          this.$store.commit('setLoading', true)
+        }
         this.axios.get('/servers')
           .then(response => {
             if (response.status === 200) {
+              console.log(response)
               this.apiData = response.data
-              this.updateTableData()
+              this.servers = this.apiData
+              if (!this.dataFilled) {
+                this.dataFilled = true
+                this.$store.commit('setLoading', false)
+              }
             }
           })
           .catch((error) => {
@@ -103,11 +139,41 @@
             } else {
               this.$snotify.error(error)
             }
+            if (error.response.status === 401) {
+              this.$store.dispatch('setAuth', {
+                isAuthed: false
+              })
+              this.$router.push('/auth/login')
+            }
           })
       },
-      updateTableData () {
-        this.servers = this.apiData
-        this.$store.commit('setLoading', false)
+      deleteClick (server) {
+        this.deleteCallingServer = server
+        this.$refs.modal.open()
+      },
+      deleteServer () {
+        this.axios.delete('/servers/' + this.deleteCallingServer.__Infrary__Provider + '/' + this.deleteCallingServer.__Infrary__ID)
+          .then(response => {
+            if (response.status === 200) {
+              console.log(response)
+              this.$snotify.success(response.data)
+            }
+          })
+          .catch((error) => {
+            if (error.response) {
+              this.$snotify.error(error.response.data)
+            } else if (error.message) {
+              this.$snotify.error('Unable to connect to API: ' + error.message)
+            } else {
+              this.$snotify.error(error)
+            }
+            if (error.response.status === 401) {
+              this.$store.dispatch('setAuth', {
+                isAuthed: false
+              })
+              this.$router.push('/auth/login')
+            }
+          })
       },
       trClassGen (server) {
         return {

@@ -6,6 +6,6 @@ RUN apk --update add python py-pip openssl ca-certificates bash git openssh-clie
     apk del build-dependencies && rm -rf /var/cache/apk/*
 
 COPY constants.py /
-ADD VMConf/start.py /start.py
+ADD start.py /start.py
 RUN chmod +x /start.py
 ENTRYPOINT ["python","/start.py"]
