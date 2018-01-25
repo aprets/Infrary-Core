@@ -2,13 +2,13 @@ import jwt
 import time
 import requests
 
-URL = "http://{}:{}/{}".format('127.0.0.1', 5000, "v0/servers/provision/create")
+URL = "http://{}:{}/{}".format('127.0.0.1', 8080, "v0/servers/provision/create")
 
 timestamp = int(time.time())
 
 expTime = timestamp + 60 * 60  # expire in an hour
 
-payload = {'uid': '5a42c63d4830602278d0a7ca'}
+payload = {'uid': '5a6677115958c3fffe398390'}
 
 jwtToken = jwt.encode(payload, 'totallysecure', 'HS256')
 
