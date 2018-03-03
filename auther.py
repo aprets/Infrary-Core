@@ -8,7 +8,7 @@ timestamp = int(time.time())
 
 expTime = timestamp + 60 * 60  # expire in an hour
 
-payload = {'uid': '5a6677115958c3fffe398390'}
+payload = {'uid': '5a6f789a5958c3fffedc7221'}
 
 jwtToken = jwt.encode(payload, 'totallysecure', 'HS256')
 
