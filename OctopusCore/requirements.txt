@@ -1,0 +1,8 @@
+PyYAML
+Flask-Cors
+sendgrid
+PyJWT
+requests
+passlib
+requests-toolbelt
+ecdsa

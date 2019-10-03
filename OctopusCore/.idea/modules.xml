@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../ContMan/.idea/ContMan.iml" filepath="$PROJECT_DIR$/../ContMan/.idea/ContMan.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/OctopusCore.iml" filepath="$PROJECT_DIR$/.idea/OctopusCore.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Provisioner/.idea/Provisioner.iml" filepath="$PROJECT_DIR$/../Provisioner/.idea/Provisioner.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../VMConf/.idea/VMConf.iml" filepath="$PROJECT_DIR$/../VMConf/.idea/VMConf.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../yaml/.idea/yaml.iml" filepath="$PROJECT_DIR$/../yaml/.idea/yaml.iml" />
+    </modules>
+  </component>
+</project>

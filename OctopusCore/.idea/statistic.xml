@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Statistic">
+    <option name="fileTypes" value="class;svn-base;svn-work;Extra;gif;png;jpg;jpeg;bmp;tga;tiff;ear;war;zip;jar;iml;iws;ipr;bz2;gz;pyc" />
+    <option name="separateTabsFileTypes" value="java;xml;css;html;js;properties;jsp;txt;php;php4;php5;phtml;inc;py;yaml;txt" />
+    <option name="excludedDirectories">
+      <list>
+        <option value="$PROJECT_DIR$/lib" />
+        <option value="$PROJECT_DIR$/../python-runtime" />
+        <option value="$PROJECT_DIR$/../WebUI" />
+        <option value="$PROJECT_DIR$/../Core" />
+        <option value="$PROJECT_DIR$/../ContMan/venv" />
+      </list>
+    </option>
+  </component>
+</project>

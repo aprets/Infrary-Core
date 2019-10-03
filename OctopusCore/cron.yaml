@@ -1,0 +1,4 @@
+cron:
+- description: remove expired TmpUser
+  url: /tmpusercleanup
+  schedule: every 2 hours

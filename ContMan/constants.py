@@ -1,0 +1,17 @@
+IS_DEBUG = True
+
+# noinspection SpellCheckingInspection
+SECRET_TOKEN_DEC_KEY = \
+    '''-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtYYswqmJNVyHPAhcn+vQ
+KtlV1NbmvhgrfLXUs1A+sw5HeEqIoA/7OwpE7To52rb1QpVt/WvncrLWR+Nx6ow7
+jiepi8rLeF/ZYQBfKbjSFrHiOQnbIZuOoipDzF/pFzI5wlhKtqD1IbjxKUBm5t7h
+BPPay8Yq7C4+nhHjd0OS0DDgucg7D5ojXsXsviOpHjmnlWJOC+dozvoEcgSjwUsD
+PYADsvQualDx8ysCTkKOlkaMUGHn5ZTMtU7ey8jSSTSSToMcn2rIfvGLsjoy30SM
+9M4oO5Va2RG5lpRNJilx2SGJfihwFvfvYRSg3X3ALpNS7lOOLmUqZsG272mTo3/t
++QIDAQAB
+-----END PUBLIC KEY-----'''
+
+ENVIRONMENT_KEY = "env"
+COMMAND_KEY = "cmd"
+IMAGE_KEY = "img"
