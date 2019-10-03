@@ -49,3 +49,4 @@ VMConfiguration = {"isMaster": True, "selfDestruct": True,
 response = requests.post(URL, json={"serverProperties": serverProperties, "VMConfiguration": VMConfiguration}, headers=headers)
 
 print response.status_code, response.text
+
